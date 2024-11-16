@@ -1,0 +1,23 @@
+# Archivos y directorios generados por Django
+*.pyc
+__pycache__/
+*.sqlite3
+
+# Archivos y directorios generados por Visual Studio Code
+.vscode/
+*.code-workspace
+
+# Dependencias de Python
+venv/
+env/
+
+# Archivos de registro
+*.log
+
+# Archivos de configuración local
+.env
+
+# Otros archivos y directorios generados
+*.pyo
+*.swp
+.DS_Store
