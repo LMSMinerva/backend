@@ -1,14 +1,12 @@
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework import status
-
+from rest_framework import status, permissions
 from ..models.models import Course
 from ..serializers.serializers import CourseSerializer
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
-
-
 class CourseView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
     """
     API endpoints for CRUD operations on Course objects.
     """

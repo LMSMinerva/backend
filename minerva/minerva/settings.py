@@ -43,6 +43,7 @@ DEPENDENCIES_APPS = [
     "rest_framework",
     'drf_spectacular',
     'corsheaders',
+    'rest_framework_simplejwt',
 ]
 
 MINERVA_APPS = ["courses"]
@@ -50,6 +51,9 @@ MINERVA_APPS = ["courses"]
 INSTALLED_APPS = DJANGO_APPS + DEPENDENCIES_APPS + MINERVA_APPS
 
 REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.BasicAuthentication',
+    ),
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
