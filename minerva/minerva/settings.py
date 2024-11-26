@@ -42,9 +42,9 @@ DJANGO_APPS = [
 
 DEPENDENCIES_APPS = [
     "rest_framework",
-    'drf_spectacular',
     'corsheaders',
     'rest_framework_simplejwt',
+    'drf_spectacular',
 ]
 
 MINERVA_APPS = ["courses"]
