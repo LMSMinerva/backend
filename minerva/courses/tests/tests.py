@@ -1,11 +1,12 @@
-from django.test import TestCase
-from rest_framework.test import APIClient
+import base64
+from rest_framework.test import APIClient,APITestCase
+from django.contrib.auth.models import User
 from rest_framework import status
 from django.urls import reverse
 from ..models.models import Course
 from ..serializers.serializers import CourseSerializer
 
-class CourseTests(TestCase):
+class CourseTests(APITestCase):
     """
     Test suite for the Course model and its API endpoints.
     """
@@ -22,15 +23,16 @@ class CourseTests(TestCase):
             course (Course): The sample course created for testing.
         """
         self.client = APIClient()
+        self.user = User.objects.create_user(username='testuser', password='testpassword')
+        credentials = base64.b64encode(b'testuser:testpassword').decode('utf-8')
+        self.client.credentials(HTTP_AUTHORIZATION='Basic ' + credentials)
         self.course_data = {
             'name': 'Test Course',
             'alias': 'test-course',
             'category': 'Test Category',
             'visibility': True,
             'description': 'Test Description',
-            'format': 'Online',
             'creation_date': '2023-01-01',
-            'id_instructor': '67890'
         }
         self.course = Course.objects.create(**self.course_data)
 

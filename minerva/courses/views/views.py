@@ -19,10 +19,7 @@ class CourseView(APIView):
             OpenApiParameter(name='category', type=OpenApiTypes.STR, description='Course category'),
             OpenApiParameter(name='visibility', type=OpenApiTypes.BOOL, description='Course visibility'),
             OpenApiParameter(name='description', type=OpenApiTypes.STR, description='Course description'),
-            OpenApiParameter(name='format', type=OpenApiTypes.STR, description='Course format'),
             OpenApiParameter(name='creation_date', type=OpenApiTypes.DATE, description='Course creation date'),
-            OpenApiParameter(name='id_instructor', type=OpenApiTypes.STR, description='ID of the instructor'),
-            OpenApiParameter(name='total_students_enrolled', type=OpenApiTypes.INT, description='Total students enrolled'),
         ]
     )
 
