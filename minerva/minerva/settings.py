@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-lj*1)d&q5f-n5h6+wqf)_84#^2yxl=ecf=r+6$+6jc^@e#w(ct
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['minerva.render.com']
+ALLOWED_HOSTS = ['minerva-2h94.render.com']
 
 # Application definition
 
