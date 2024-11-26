@@ -92,3 +92,5 @@ websocket-client==1.8.0
 Werkzeug==3.0.1
 whitenoise==6.8.2
 wsproto==1.2.0
+drf-spectacular==0.26.2
+
