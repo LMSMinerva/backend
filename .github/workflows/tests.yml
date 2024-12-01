@@ -26,5 +26,6 @@ jobs:
       env:
         PYTHONPATH: ${{ github.workspace }}/minerva
       run: |
+        export PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/minerva
         cd minerva
         python manage.py test
