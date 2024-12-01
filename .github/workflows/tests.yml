@@ -22,10 +22,9 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
+    - name: Set environment variables
+      run: echo "DJANGO_SETTINGS_MODULE=minerva.settings" >> $GITHUB_ENV
+
     - name: Run Tests
-      env:
-        PYTHONPATH: ${{ github.workspace }}/minerva
-      run: |
-        export PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/minerva
-        cd minerva
-        python manage.py test
+      run: python manage.py test
+      working-directory: minerva
