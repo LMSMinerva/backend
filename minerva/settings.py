@@ -47,7 +47,7 @@ DEPENDENCIES_APPS = [
     'drf_spectacular',
 ]
 
-MINERVA_APPS = ["courses"]
+MINERVA_APPS = ["courses", "institution", "course_category"]
 
 INSTALLED_APPS = DJANGO_APPS + DEPENDENCIES_APPS + MINERVA_APPS
 
