@@ -2,8 +2,8 @@ from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status, permissions
-from ..models.models import Course
-from ..serializers.serializers import CourseSerializer
+from courses.models import Course
+from courses.serializers import CourseSerializer
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
 
 
@@ -37,7 +37,7 @@ class CourseView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class CourseDetailView(APIView):
+class CourseDetailViewById(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     @extend_schema(request=None, responses=CourseSerializer)
@@ -67,5 +67,39 @@ class CourseDetailView(APIView):
         Delete a Course object by UUID.
         """
         course = get_object_or_404(Course, id=id)
+        course.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class CourseDetailViewBySlug(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(request=None, responses=CourseSerializer)
+    def get(self, request, alias):
+        """
+        Retrieve a single Course object by UUID.
+        """
+        course = get_object_or_404(Course, alias=alias)
+        serializer = CourseSerializer(course)
+        return Response(serializer.data)
+
+    @extend_schema(request=CourseSerializer, responses=CourseSerializer)
+    def put(self, request, alias):
+        """
+        Update an existing Course object by UUID.
+        """
+        course = get_object_or_404(Course, alias=alias)
+        serializer = CourseSerializer(course, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(request=None, responses={204: None})
+    def delete(self, request, alias):
+        """
+        Delete a Course object by UUID.
+        """
+        course = get_object_or_404(Course, alias=alias)
         course.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
