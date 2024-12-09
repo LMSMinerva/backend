@@ -8,17 +8,17 @@ class Course(models.Model):
     Model for Courses
 
     Attributes:
-        id: Unique identifier for the course
-        name: Name complete of course
-        alias: A short form of call a course
-        description: A description about the course
-        creation_date: Date of creation of the course
-        last_update: Date of the last update
-        modules: count the number of modules
-        active: true if the course is active
-        assessment_items: elemnts of evaluate
-        appraisements: The number of appraisements
-        mean_appraisement: The mean appraisement of the course
+        id (uuid): Unique identifier for the course
+        name (str): Name complete of course
+        alias (str): A short form of call a course
+        description (str): A description about the course
+        creation_date (date): Date of creation of the course
+        last_update (date): Date of the last update
+        modules (int): count the number of modules
+        active (bool): true if the course is active
+        assessment_items (int): elemnts of evaluate
+        appraisements (int): The number of appraisements
+        mean_appraisement (float): The mean appraisement of the course
     """
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
