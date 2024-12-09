@@ -77,7 +77,7 @@ class CourseDetailViewBySlug(APIView):
     @extend_schema(request=None, responses=CourseSerializer)
     def get(self, request, alias):
         """
-        Retrieve a single Course object by UUID.
+        Retrieve a single Course object by alias.
         """
         course = get_object_or_404(Course, alias=alias)
         serializer = CourseSerializer(course)
@@ -86,7 +86,7 @@ class CourseDetailViewBySlug(APIView):
     @extend_schema(request=CourseSerializer, responses=CourseSerializer)
     def put(self, request, alias):
         """
-        Update an existing Course object by UUID.
+        Update an existing Course object by alias.
         """
         course = get_object_or_404(Course, alias=alias)
         serializer = CourseSerializer(course, data=request.data, partial=True)
@@ -98,7 +98,7 @@ class CourseDetailViewBySlug(APIView):
     @extend_schema(request=None, responses={204: None})
     def delete(self, request, alias):
         """
-        Delete a Course object by UUID.
+        Delete a Course object by alias.
         """
         course = get_object_or_404(Course, alias=alias)
         course.delete()
