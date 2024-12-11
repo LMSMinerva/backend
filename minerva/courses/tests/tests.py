@@ -3,10 +3,10 @@ from rest_framework.test import APIClient, APITestCase
 from django.contrib.auth.models import User
 from rest_framework import status
 from django.urls import reverse
-from course_category.models.models import CourseCategory
-from institution.models.models import Institution
-from ..models.models import Course
-from ..serializers.serializers import CourseSerializer
+from course_category.models import CourseCategory
+from institution.models import Institution
+from courses.models import Course
+from courses.serializers import CourseSerializer
 
 
 class CourseTests(APITestCase):
@@ -31,22 +31,20 @@ class CourseTests(APITestCase):
             description="A sample institution for testing purposes.",
         )
 
+        # Create course data with only essential fields
         self.course_data = {
             "name": "Test Course",
             "alias": "test-course",
             "category": self.category,
             "institution": self.institution,
-            "active": True,
+            "modules": 5,
             "description": "Test Description",
-            "creation_date": "2023-01-01",
-            "last_update": "2023-01-01",
-            "modules_count": 5,
         }
         self.course = Course.objects.create(**self.course_data)
 
     def test_get_all_courses(self):
         """
-        Test retrieving all courses.
+        Test to ensure retrieving all courses works correctly.
         """
         response = self.client.get(reverse("course_list_create"))
         courses = Course.objects.all()
@@ -54,56 +52,66 @@ class CourseTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, serializer.data)
 
+    def test_create_course(self):
+        """
+        Test to confirm that a new course can be created successfully without sending default fields.
+        """
+        create_data = {
+            "name": "Test Course 2",
+            "alias": "test-course-2",
+            "category": self.category.id,
+            "institution": self.institution.id,
+            "modules": 5,
+            "description": "Test Description",
+        }
+        response = self.client.post(
+            reverse("course_list_create"), create_data, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Course.objects.count(), 2)
+        self.assertEqual(
+            Course.objects.get(id=response.data["id"]).name, "Test Course 2"
+        )
+
     def test_get_single_course(self):
         """
-        Test retrieving a single course by its id (UUID).
+        Test to verify retrieving a single course by its ID returns the correct information.
         """
         response = self.client.get(
-            reverse("course_detail_update_delete", kwargs={"id": self.course.id})
+            reverse("course_detail_by_id", kwargs={"id": self.course.id})
         )
         course = Course.objects.get(id=self.course.id)
         serializer = CourseSerializer(course)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, serializer.data)
 
-    def test_create_course(self):
-        """
-        Test creating a new course.
-        """
-        create_data = self.course_data.copy()
-        create_data["institution"] = self.institution.id
-        create_data["category"] = self.category.id
-        response = self.client.post(
-            reverse("course_list_create"), create_data, format="json"
-        )
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(Course.objects.count(), 2)
-        self.assertEqual(Course.objects.get(id=response.data["id"]).name, "Test Course")
-
     def test_update_course(self):
         """
-        Test updating an existing course.
+        Test to ensure only necessary fields are updated for existing courses.
         """
-        updated_data = self.course_data.copy()
-        updated_data["name"] = "Updated Course"
-        updated_data["category"] = self.category.id
-        updated_data["institution"] = self.institution.id
+        updated_data = {
+            "name": "Updated Course",
+            "category": self.category.id,
+            "institution": self.institution.id,
+            "modules": 10,
+        }
         response = self.client.put(
-            reverse("course_detail_update_delete", kwargs={"id": self.course.id}),
+            reverse("course_detail_by_id", kwargs={"id": self.course.id}),
             updated_data,
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.course.refresh_from_db()
         self.assertEqual(self.course.name, "Updated Course")
+        self.assertEqual(self.course.modules, 10)
 
     def test_partial_update_course(self):
         """
-        Test partially updating an existing course.
+        Test to confirm partial updates apply only to the specified fields.
         """
         partial_data = {"name": "Partially Updated Course"}
         response = self.client.put(
-            reverse("course_detail_update_delete", kwargs={"id": self.course.id}),
+            reverse("course_detail_by_id", kwargs={"id": self.course.id}),
             partial_data,
             format="json",
         )
@@ -113,10 +121,77 @@ class CourseTests(APITestCase):
 
     def test_delete_course(self):
         """
-        Test deleting an existing course.
+        Test to confirm that an existing course can be successfully deleted.
         """
         response = self.client.delete(
-            reverse("course_detail_update_delete", kwargs={"id": self.course.id})
+            reverse("course_detail_by_id", kwargs={"id": self.course.id})
         )
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(Course.objects.count(), 0)
+
+    def test_get_single_course_by_slug(self):
+        """
+        Test to verify retrieving a single course by its slug returns the correct information.
+        """
+        response = self.client.get(
+            reverse("course_detail_by_slug", kwargs={"alias": "test-course"})
+        )
+        course = Course.objects.get(alias="test-course")
+        serializer = CourseSerializer(course)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, serializer.data)
+
+    def test_update_course_by_slug(self):
+        """
+        Test to ensure an existing course can be updated using its slug.
+        """
+        updated_data = {
+            "name": "Updated Course",
+            "alias": "uc",
+            "category": self.category.id,
+            "institution": self.institution.id,
+            "modules": 10,
+            "active": False,
+        }
+        response = self.client.put(
+            reverse("course_detail_by_slug", kwargs={"alias": "test-course"}),
+            updated_data,
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.course.refresh_from_db()
+        self.assertEqual(self.course.name, "Updated Course")
+        self.assertEqual(self.course.modules, 10)
+
+    def test_partial_update_course_by_slug(self):
+        """
+        Test to ensure partial updates are possible using slug.
+        """
+        partial_data = {"name": "Partially Updated Course"}
+        response = self.client.put(
+            reverse("course_detail_by_slug", kwargs={"alias": "test-course"}),
+            partial_data,
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.course.refresh_from_db()
+        self.assertEqual(self.course.name, "Partially Updated Course")
+
+    def test_delete_course_by_slug(self):
+        """
+        Test to confirm that a course can be deleted using its slug.
+        """
+        response = self.client.delete(
+            reverse("course_detail_by_slug", kwargs={"alias": "test-course"})
+        )
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Course.objects.filter(alias="test-course").exists())
+
+    def test_delete_course_by_nonexistent_slug(self):
+        """
+        Test to confirm attempting to delete a non-existent slug returns 404.
+        """
+        response = self.client.delete(
+            reverse("course_detail_by_slug", kwargs={"alias": "nonexistent-slug"})
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
