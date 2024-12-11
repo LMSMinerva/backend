@@ -17,8 +17,9 @@ class Course(models.Model):
         modules (int): count the number of modules
         active (bool): true if the course is active
         assessment_items (int): elemnts of evaluate
-        appraisements (int): The number of appraisements
-        mean_appraisement (float): The mean appraisement of the course
+        reviews (int): The number of reviews
+        comments (int): The number of comments
+        rating (float): The mean appraisement of the course
     """
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -39,7 +40,7 @@ class Course(models.Model):
             )
         ],
     )
-    active = models.BooleanField(default=True, blank=True)
+    active = models.BooleanField(default=False, blank=True)
     description = models.TextField(max_length=512, null=True, blank=True)
     creation_date = models.DateField(auto_now_add=True, blank=True)
     last_update = models.DateField(auto_now=True, blank=True)
@@ -47,10 +48,9 @@ class Course(models.Model):
         validators=[MinValueValidator(1), MaxValueValidator(16)]
     )
     assessment_items = models.PositiveIntegerField(default=0, blank=True)
-    appraisements = models.PositiveIntegerField(default=0, blank=True)
-    mean_appraisement = models.DecimalField(
-        max_digits=4, decimal_places=2, null=True, blank=True
-    )
+    reviews = models.PositiveIntegerField(default=0, blank=True)
+    comments = models.PositiveIntegerField(default=0, blank=True)
+    rating = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True)
 
     def __str__(self):
         return self.name
