@@ -5,8 +5,8 @@ from rest_framework import status
 from django.urls import reverse
 from course_category.models import CourseCategory
 from institution.models import Institution
-from courses.models import Course
-from courses.serializers import CourseSerializer
+from course.models import Course
+from course.serializers import CourseSerializer
 
 
 class CourseTests(APITestCase):
@@ -31,7 +31,6 @@ class CourseTests(APITestCase):
             description="A sample institution for testing purposes.",
         )
 
-        # Create course data with only essential fields
         self.course_data = {
             "name": "Test Course",
             "alias": "test-course",

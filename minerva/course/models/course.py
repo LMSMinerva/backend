@@ -45,7 +45,10 @@ class Course(models.Model):
     creation_date = models.DateField(auto_now_add=True, blank=True)
     last_update = models.DateField(auto_now=True, blank=True)
     modules = models.IntegerField(
-        validators=[MinValueValidator(1), MaxValueValidator(16)]
+        default=0,
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(0), MaxValueValidator(16)],
     )
     assessment_items = models.PositiveIntegerField(default=0, blank=True)
     reviews = models.PositiveIntegerField(default=0, blank=True)
