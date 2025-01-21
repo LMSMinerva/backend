@@ -28,7 +28,7 @@ SECRET_KEY = 'django-insecure-lj*1)d&q5f-n5h6+wqf)_84#^2yxl=ecf=r+6$+6jc^@e#w(ct
 DEBUG = True
 
 ALLOWED_HOSTS = ['minerva-2h94.onrender.com']
-
+DJANGO_SETTINGS_MODULE=minerva.settings
 # Application definition
 
 DJANGO_APPS = [
