@@ -25,5 +25,10 @@ jobs:
         pip install -r requirements.txt
 
     - name: Run Tests
+      env:
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          PORT: ${{ secrets.PORT }}
+          ALLOWED_HOSTS: ${{ secrets.ALLOWED_HOSTS }}
       run: python manage.py test
       working-directory: minerva
