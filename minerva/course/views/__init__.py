@@ -2,7 +2,7 @@
 init module for courses views
 """
 
-from courses.views.courses import (
+from course.views.course import (
     CourseView,
     CourseDetailViewById,
     CourseDetailViewBySlug,
