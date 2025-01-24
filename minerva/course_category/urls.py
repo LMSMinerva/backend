@@ -1,5 +1,5 @@
 from django.urls import path
-from .views.views import CourseCategoryListView, CourseCategoryDetailView
+from course_category.views import CourseCategoryListView, CourseCategoryDetailView
 
 urlpatterns = [
     path(

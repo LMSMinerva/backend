@@ -3,8 +3,8 @@ from rest_framework.test import APIClient, APITestCase
 from django.contrib.auth.models import User
 from rest_framework import status
 from django.urls import reverse
-from ..models.models import Institution
-from ..serializers.serializers import InstitutionSerializer
+from institution.models import Institution
+from institution.serializers import InstitutionSerializer
 
 
 class InstitutionTests(APITestCase):

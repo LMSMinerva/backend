@@ -2,8 +2,8 @@ from rest_framework.test import APIClient, APITestCase
 from django.contrib.auth.models import User
 from rest_framework import status
 from django.urls import reverse
-from ..models.models import CourseCategory
-from ..serializers.serializers import CourseCategorySerializer
+from course_category.models import CourseCategory
+from course_category.serializers import CourseCategorySerializer
 import base64
 
 
@@ -57,16 +57,17 @@ class CourseCategoryTests(APITestCase):
         """
         Test creating a new course category.
         """
+        self.course_category_new = {"name": "Test Category 2"}
         response = self.client.post(
             reverse("course_category_list_create"),
-            self.course_category_data,
+            self.course_category_new,
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(CourseCategory.objects.count(), 2)
         self.assertEqual(
             CourseCategory.objects.get(id=response.data["id"]).name,
-            "Test Category",
+            "Test Category 2",
         )
 
     def test_update_course_category(self):
