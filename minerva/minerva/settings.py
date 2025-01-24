@@ -93,7 +93,7 @@ WSGI_APPLICATION = "minerva.wsgi.application"
 
 
 DATABASES = {"default": env.db("POSTGRESQL_ADDON_URI")}
-
+DATABASES["default"]["ENGINE"] = "django.db.backends.postgresql"
 
 AUTH_PASSWORD_VALIDATORS = [
     {
