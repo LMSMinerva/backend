@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+import dj_database_url
 import environ
 
 # Initialise environment variables
@@ -92,8 +93,8 @@ TEMPLATES = [
 WSGI_APPLICATION = "minerva.wsgi.application"
 
 
-DATABASES = {"default": env.db("POSTGRESQL_ADDON_URI")}
-DATABASES["default"]["ENGINE"] = "django.db.backends.postgresql"
+DATABASES = {"default": dj_database_url.config(default=env("POSTGRESQL_ADDON_URI"))}
+
 
 AUTH_PASSWORD_VALIDATORS = [
     {
