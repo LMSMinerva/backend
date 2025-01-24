@@ -92,8 +92,10 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "minerva.wsgi.application"
 
+postgres_url = env("POSTGRESQL_ADDON_URI")
+print(f"PostgreSQL URL: {postgres_url}")
 
-DATABASES = {"default": dj_database_url.config(default=env("POSTGRESQL_ADDON_URI"))}
+DATABASES = {"default": dj_database_url.config(env("POSTGRESQL_ADDON_URI"))}
 
 
 AUTH_PASSWORD_VALIDATORS = [
