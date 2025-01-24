@@ -30,5 +30,6 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           PORT: ${{ secrets.PORT }}
           ALLOWED_HOSTS: ${{ secrets.ALLOWED_HOSTS }}
+          POSTGRESQL_ADDON_URI: ${{ secrets.POSTGRESQL_ADDON_URI }}
       run: python manage.py test
       working-directory: minerva
