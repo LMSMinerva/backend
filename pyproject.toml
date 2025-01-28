@@ -22,6 +22,9 @@ django-debug-toolbar = "^3.7"
 
 [tool.poetry.dev-dependencies]
 
+[package.dependencies]
+typing-extensions = {version = ">=4", markers = "python_version < \"3.11\""}
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
