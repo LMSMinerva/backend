@@ -3,6 +3,7 @@ name = "minerva-backend"
 version = "0.0.1"
 description = "Backend team repository of Minerva Learning Management System (LMS). Developed by a group of students of Universidad Nacional de Colombia using Django."
 authors = ["Carolina Alvarez Murillo <caalvarezmu@unal.edu.com>"]
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.11"
@@ -18,6 +19,9 @@ drf-spectacular = "^0.27.2"
 django-environ = "^0.9.0"
 
 [tool.poetry.dev-dependencies]
+
+[package.dependencies]
+typing-extensions = {version = ">=4", markers = "python_version < \"3.11\""}
 
 [build-system]
 requires = ["poetry-core"]
