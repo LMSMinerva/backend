@@ -5,7 +5,7 @@ description = "Backend team repository of Minerva Learning Management System (LM
 authors = ["Carolina Alvarez Murillo <caalvarezmu@unal.edu.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = "^3.11"
 django = "^5.1.3"
 djangorestframework = "^3.15.2"
 django-cors-headers = "^4.6.0"
