@@ -22,22 +22,11 @@ jobs:
     - name: Install Poetry
       run: |
         curl -sSL https://install.python-poetry.org | python3 -
-  
-    - name: Run build.sh
-      env:
-          SECRET_KEY: ${{ secrets.SECRET_KEY }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          PORT: ${{ secrets.PORT }}
-          ALLOWED_HOSTS: ${{ secrets.ALLOWED_HOSTS }}
-          POSTGRESQL_ADDON_USER: ${{ secrets.POSTGRESQL_ADDON_USER }}
-          POSTGRESQL_ADDON_DB: ${{ secrets.POSTGRESQL_ADDON_DB }}
-          POSTGRESQL_ADDON_PASSWORD: ${{ secrets.POSTGRESQL_ADDON_PASSWORD }}
-          POSTGRESQL_ADDON_HOST: ${{ secrets.POSTGRESQL_ADDON_HOST }}
-          POSTGRESQL_ADDON_PORT: ${{ secrets.POSTGRESQL_ADDON_PORT }}
-      run: |
-        chmod +x build.sh
-        ./build.sh
 
+    - name: Install Dependencies
+      run: |
+        poetry install
+  
     - name: Run Tests
       env:
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
