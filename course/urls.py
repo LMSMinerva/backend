@@ -9,7 +9,7 @@ urlpatterns = [
         name="course_detail_by_id",
     ),
     path(
-        "courses/<slug:alias>/",
+        "course/<slug:alias>/",
         CourseDetailViewBySlug.as_view(),
         name="course_detail_by_slug",
     ),
