@@ -70,10 +70,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-CORS_ALLOWED_ORIGINS = [
-    r"^http://localhost:\d+$",
-    r"^http://127\.0\.0\.1:\d+$",
-]
+CORS_ALLOW_ALL_ORIGINS = True
 
 ROOT_URLCONF = "minerva.urls"
 
