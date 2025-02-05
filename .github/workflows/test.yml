@@ -39,4 +39,3 @@ jobs:
           POSTGRESQL_ADDON_HOST: ${{ secrets.POSTGRESQL_ADDON_HOST }}
           POSTGRESQL_ADDON_PORT: ${{ secrets.POSTGRESQL_ADDON_PORT }}
       run: poetry run python manage.py test
-      working-directory: minerva
