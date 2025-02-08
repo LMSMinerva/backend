@@ -5,6 +5,8 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
+from rest_framework_simplejwt.views import TokenVerifyView
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
 from ..serializers.serializer import UserSerializer
 
 from .utils import get_id_token_with_code
@@ -41,7 +43,18 @@ def get_jwt_token(user):
 
 class LoginWithGoogle(APIView):
     """Handle Google OAuth login process."""
-
+    @extend_schema(
+        request={'application/json': {'type': 'object', 'properties': {'code': {'type': 'string'}}}},
+        responses={
+            200: {'type': 'object', 'properties': {
+                'access_token': {'type': 'string'},
+                'user': {'$ref': '#/components/schemas/User'}
+            }},
+            400: {'type': 'object', 'properties': {'error': {'type': 'string'}}}
+        },
+        description='Exchange Google OAuth code for JWT token',
+        tags=['authentication']
+    )
     def post(self,request):
         """
         Process Google OAuth code and return JWT token.
@@ -76,7 +89,11 @@ class LoginWithGoogle(APIView):
 
 class LogoutView(APIView):
     """Handle user logout."""
-    
+    @extend_schema(
+        responses={200: {'type': 'object', 'properties': {'message': {'type': 'string'}}}},
+        description='Logout user and invalidate JWT token',
+        tags=['authentication']
+    )
     def post(self, request):
         """
         Logout user and blacklist JWT token.
@@ -86,3 +103,15 @@ class LogoutView(APIView):
         """
         logout(request)
         return Response({"message": "Successfully logged out"})
+    
+@extend_schema(
+    request={'application/json': {'type': 'object', 'properties': {'token': {'type': 'string'}}}},
+    responses={
+        200: {'type': 'object', 'properties': {}},
+        401: {'type': 'object', 'properties': {'detail': {'type': 'string'}}}
+    },
+    description='Verify JWT token validity',
+    tags=['authentication']
+)
+class DocumentedTokenVerifyView(TokenVerifyView):
+    pass
