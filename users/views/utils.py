@@ -10,6 +10,15 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def get_id_token_with_code(code):
+    """
+    Verify Google authentication code and return user information.
+    
+    Args:
+        code (str): Authorization code from Google OAuth
+    
+    Returns:
+        dict: Verified token information or None if verification fails
+    """
     redirect_uri = "postmessage"
     token_endpoint = "https://oauth2.googleapis.com/token"
     
