@@ -6,6 +6,8 @@ from course.models import Course
 from course.serializers import CourseSerializer
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
 
+from module.serializers.module import ModuleSerializer
+
 
 class CourseView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -35,6 +37,23 @@ class CourseView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CourseModulesView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(
+        request=None,
+        responses=ModuleSerializer(many=True),
+    )
+    def get(self, request, id):
+        """
+        Retrieve all modules of a course in order.
+        """
+        course = get_object_or_404(Course, id=id)
+        modules = course.ordered_modules
+        serializer = ModuleSerializer(modules, many=True)
+        return Response(serializer.data)
 
 
 class CourseDetailViewById(APIView):

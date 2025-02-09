@@ -7,6 +7,8 @@ from course_category.models import CourseCategory
 from institution.models import Institution
 from course.models import Course
 from course.serializers import CourseSerializer
+from module.models.module import Module
+from module.serializers.module import ModuleSerializer
 
 
 class CourseTests(APITestCase):
@@ -36,10 +38,30 @@ class CourseTests(APITestCase):
             "alias": "test-course",
             "category": self.category,
             "institution": self.institution,
-            "modules": 5,
             "description": "Test Description",
         }
         self.course = Course.objects.create(**self.course_data)
+        self.module1 = Module.objects.create(
+            course=self.course, name="Module 1", order=2
+        )
+        self.module2 = Module.objects.create(
+            course=self.course, name="Module 2", order=1
+        )
+        self.module3 = Module.objects.create(
+            course=self.course, name="Module 3", order=3
+        )
+
+    def test_get_ordered_modules(self):
+        """
+        Test retrieving modules of a course in ordered sequence.
+        """
+        response = self.client.get(
+            reverse("course_modules", kwargs={"id": self.course.id})
+        )
+        expected_modules = [self.module2, self.module1, self.module3]
+        serializer = ModuleSerializer(expected_modules, many=True)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, serializer.data)
 
     def test_get_all_courses(self):
         """
@@ -60,7 +82,6 @@ class CourseTests(APITestCase):
             "alias": "test-course-2",
             "category": self.category.id,
             "institution": self.institution.id,
-            "modules": 5,
             "description": "Test Description",
         }
         response = self.client.post(
@@ -92,7 +113,6 @@ class CourseTests(APITestCase):
             "name": "Updated Course",
             "category": self.category.id,
             "institution": self.institution.id,
-            "modules": 10,
         }
         response = self.client.put(
             reverse("course_detail_by_id", kwargs={"id": self.course.id}),
@@ -102,7 +122,6 @@ class CourseTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.course.refresh_from_db()
         self.assertEqual(self.course.name, "Updated Course")
-        self.assertEqual(self.course.modules, 10)
 
     def test_partial_update_course(self):
         """
@@ -149,7 +168,6 @@ class CourseTests(APITestCase):
             "alias": "uc",
             "category": self.category.id,
             "institution": self.institution.id,
-            "modules": 10,
             "active": False,
         }
         response = self.client.put(
@@ -160,7 +178,6 @@ class CourseTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.course.refresh_from_db()
         self.assertEqual(self.course.name, "Updated Course")
-        self.assertEqual(self.course.modules, 10)
 
     def test_partial_update_course_by_slug(self):
         """
