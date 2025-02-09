@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.contrib.auth.models import User
 from django.contrib.auth import logout
-from rest_framework import status
+from rest_framework import status, serializers
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
@@ -87,10 +87,13 @@ class LoginWithGoogle(APIView):
         serializer = UserSerializer(user)
         return Response({'access_token': token, 'user': serializer.data})
 
+class LogoutResponseSerializer(serializers.Serializer):
+    message = serializers.CharField()
+
 class LogoutView(APIView):
     """Handle user logout."""
     @extend_schema(
-        responses={200: {'type': 'object', 'properties': {'message': {'type': 'string'}}}},
+        responses={200: LogoutResponseSerializer},
         description='Logout user and invalidate JWT token',
         tags=['authentication']
     )
