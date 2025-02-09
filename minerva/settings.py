@@ -1,4 +1,5 @@
 from pathlib import Path
+from datetime import timedelta
 import os
 import environ
 import sys
@@ -16,9 +17,7 @@ PORT = env.int("PORT", default=8000)
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get("SECRET_KEY", default=env("SECRET_KEY"))
 
-# SECRET_KEY = os.environ.get("SECRET_KEY", default=env("SECRET_KEY"))
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = "RENDER" not in os.environ
+DEBUG = True
 
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[])
 
@@ -51,6 +50,10 @@ REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
+}
+
 SPECTACULAR_SETTINGS = {
     "TITLE": "Minerva API",
     "DESCRIPTION": "API documentation for Minerva",
@@ -59,11 +62,11 @@ SPECTACULAR_SETTINGS = {
 }
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
-    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
