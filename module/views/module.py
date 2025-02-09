@@ -2,6 +2,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status, permissions
+from content.serializers.content import ContentSerializer
 from course.models.course import Course
 from module.models import Module
 from module.serializers import ModuleSerializer
@@ -19,7 +20,7 @@ class ModuleListView(APIView):
         responses=ModuleSerializer(many=True),
         parameters=[
             OpenApiParameter(
-                name="course_id",
+                name="course",
                 type=OpenApiTypes.UUID,
                 description="The UUID of the course to filter modules by.",
                 required=False,
@@ -30,7 +31,7 @@ class ModuleListView(APIView):
         """
         Retrieve all Module objects, or filter by course if course_id is provided.
         """
-        course_id = request.query_params.get("course_id")
+        course_id = request.query_params.get("course")
 
         if course_id:
             modules = Module.objects.filter(id_course_id=course_id)
@@ -50,6 +51,23 @@ class ModuleListView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ModuleContentsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(
+        request=None,
+        responses=ContentSerializer(many=True),
+    )
+    def get(self, request, id):
+        """
+        Retrieve all contents of a module in order.
+        """
+        module = get_object_or_404(Module, id=id)
+        contents = module.ordered_contents
+        serializer = ContentSerializer(contents, many=True)
+        return Response(serializer.data)
 
 
 class ModuleDetailView(APIView):

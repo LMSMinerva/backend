@@ -3,6 +3,8 @@ from rest_framework.test import APITestCase
 from rest_framework.test import APIClient
 from django.contrib.auth.models import User
 from rest_framework import status
+from content.models.content import Content
+from content.serializers.content import ContentSerializer
 from course.models import Course
 from module.models import Module
 from django.urls import reverse
@@ -21,19 +23,37 @@ class ModuleTests(APITestCase):
             name="Test Course", description="Test Course Description"
         )
         self.module_1 = Module.objects.create(
-            id_course=self.course,
+            course=self.course,
             name="Module 1",
             description="Module 1 Description",
-            instructional_items=5,
-            assessment_items=3,
         )
         self.module_2 = Module.objects.create(
-            id_course=self.course,
+            course=self.course,
             name="Module 2",
             description="Module 2 Description",
-            instructional_items=6,
-            assessment_items=4,
         )
+        self.content_1 = Content.objects.create(
+            module=self.module_1,
+            name="Content 1",
+            description="Content 1 Description",
+        )
+        self.content_2 = Content.objects.create(
+            module=self.module_1,
+            name="Content 2",
+            description="Content 2 Description",
+        )
+
+    def test_get_ordered_contents(self):
+        """
+        Test retrieving contents of a module in ordered sequence.
+        """
+        response = self.client.get(
+            reverse("module_contents", kwargs={"id": self.module_1.id})
+        )
+        expected_contents = [self.content_1, self.content_2]
+        serializer = ContentSerializer(expected_contents, many=True)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, serializer.data)
 
     def test_get_modules_by_course(self):
         """
@@ -50,18 +70,16 @@ class ModuleTests(APITestCase):
         """
         url = reverse("module_list")
         data = {
-            "id_course": self.course.id,
+            "course": self.course.id,
             "name": "Module 3",
             "description": "Module 3 Description",
-            "instructional_items": 7,
-            "assessment_items": 5,
         }
         response = self.client.post(url, data, format="json")
         if response.status_code != status.HTTP_201_CREATED:
             print(response.data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data["name"], "Module 3")
-        self.assertEqual(response.data["id_course"], self.course.id)
+        self.assertEqual(response.data["course"], self.course.id)
 
     def test_get_module_by_id(self):
         """
@@ -98,11 +116,9 @@ class ModuleTests(APITestCase):
         """
         url = reverse("module_list")
         data = {
-            "id_course": str(self.course.id),
+            "course": str(self.course.id),
             "name": "Module 3",
             "description": "Module 3 Description",
-            "instructional_items": 7,
-            "assessment_items": 5,
         }
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -117,11 +133,9 @@ class ModuleTests(APITestCase):
         self.assertEqual(self.module_1.order, 1)
         url = reverse("module_list")
         data = {
-            "id_course": str(self.course.id),
+            "course": str(self.course.id),
             "name": "Module 3",
             "description": "Module 3 Description",
-            "instructional_items": 7,
-            "assessment_items": 5,
         }
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)

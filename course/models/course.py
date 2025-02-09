@@ -44,16 +44,15 @@ class Course(models.Model):
     description = models.TextField(max_length=512, null=True, blank=True)
     creation_date = models.DateField(auto_now_add=True, blank=True)
     last_update = models.DateField(auto_now=True, blank=True)
-    modules = models.IntegerField(
-        default=0,
-        blank=True,
-        null=True,
-        validators=[MinValueValidator(0), MaxValueValidator(16)],
-    )
     assessment_items = models.PositiveIntegerField(default=0, blank=True)
     reviews = models.PositiveIntegerField(default=0, blank=True)
     comments = models.PositiveIntegerField(default=0, blank=True)
     rating = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True)
+
+    @property
+    def ordered_modules(self):
+        """Returns the modules ordered by 'order' field."""
+        return self.modules.order_by("order")
 
     def __str__(self):
         return self.name
