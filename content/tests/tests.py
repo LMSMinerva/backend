@@ -81,13 +81,16 @@ class ContentTests(APITestCase):
             "name": "Content pdf",
             "description": "Content pdf Description",
             "metadata": 3,
-            "body": "https://pdf.com",
+            "body": "https://drive.google.com/file/d/1k1fcpMb5OxMXTEJ2U3ymAE5wTnDyvCRu/view?usp=sharing",
             "content_type": self.pdf.id,
         }
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data["name"], "Content pdf")
-        self.assertEqual(response.data["body"], "https://pdf.com")
+        self.assertEqual(
+            response.data["body"],
+            "https://drive.google.com/file/d/1k1fcpMb5OxMXTEJ2U3ymAE5wTnDyvCRu/view?usp=sharing",
+        )
         self.assertEqual(response.data["content_type"], self.pdf.id)
 
     def test_create_codigo_content(self):

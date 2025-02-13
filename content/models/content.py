@@ -78,6 +78,15 @@ class Content(models.Model):
 
         elif self.content_type.name == "pdf":
             # metadata debe ser el número de páginas
+            if isinstance(self.metadata, str):
+                try:
+                    self.metadata = int(self.metadata)
+                except ValueError:
+                    raise ValidationError(
+                        {"metadata": "Debe ser un número entero positivo de páginas."}
+                    )
+
+            # Verifica que sea un número entero positivo
             if not isinstance(self.metadata, int) or self.metadata <= 0:
                 raise ValidationError(
                     {"metadata": "Debe ser un número entero positivo de páginas."}
