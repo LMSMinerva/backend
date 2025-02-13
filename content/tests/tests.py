@@ -5,6 +5,7 @@ from rest_framework.test import APIClient
 from django.contrib.auth.models import User
 from rest_framework import status
 from content.models.content import Content
+from content_category.models.content_category import ContentCategory
 from course.models.course import Course
 from module.models import Module
 from django.urls import reverse
@@ -19,6 +20,13 @@ class ContentTests(APITestCase):
         credentials = base64.b64encode(b"testuser:testpassword").decode("utf-8")
         self.client.credentials(HTTP_AUTHORIZATION="Basic " + credentials)
 
+        self.content_category1 = {"name": "codigo"}
+        self.codigo = ContentCategory.objects.create(**self.content_category1)
+        self.content_category2 = {"name": "pdf"}
+        self.pdf = ContentCategory.objects.create(**self.content_category2)
+        self.content_category3 = {"name": "video"}
+        self.video = ContentCategory.objects.create(**self.content_category3)
+
         self.course = Course.objects.create(
             name="Test Course",
             description="Test Course Description",
@@ -32,80 +40,108 @@ class ContentTests(APITestCase):
             module=self.module,
             name="Content 1",
             description="Content 1 Description",
-            metadata="video",
+            metadata=150,
             body="https://youtube.com",
+            content_type=self.video,
         )
         self.Content_2 = Content.objects.create(
             module=self.module,
             name="Content 2",
             description="Content 2 Description",
-            metadata="pdf",
+            metadata=3,
             body="https://drive.com",
+            content_type=self.pdf,
         )
 
-    def test_create_content_valid_json(self):
+    def test_create_video_content(self):
         """
-        Test creating a new Content where metadata requires JSON in body.
+        Test to create a new video content.
         """
         url = reverse("content_list")
         data = {
             "module": self.module.id,
-            "name": "Content JSON",
-            "description": "Valid JSON Content",
-            "metadata": "codigo",
-            "body": json.dumps({"key": "value"}),  # Valid JSON
+            "name": "Content video",
+            "description": "Content video Description",
+            "metadata": 250,
+            "body": "https://youtube.com",
+            "content_type": self.video.id,
         }
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data["metadata"], "codigo")
+        self.assertEqual(response.data["name"], "Content video")
+        self.assertEqual(response.data["content_type"], self.video.id)
 
-    def test_create_content_valid_url(self):
+    def test_create_pdf_content(self):
         """
-        Test creating a new Content where metadata requires a URL in body.
+        Test to create a new pdf content.
         """
         url = reverse("content_list")
         data = {
             "module": self.module.id,
-            "name": "Content Video",
-            "description": "Valid URL Content",
-            "metadata": "video",
-            "body": "https://example.com/video.mp4",
+            "name": "Content pdf",
+            "description": "Content pdf Description",
+            "metadata": 3,
+            "body": "https://pdf.com",
+            "content_type": self.pdf.id,
         }
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data["metadata"], "video")
+        self.assertEqual(response.data["name"], "Content pdf")
+        self.assertEqual(response.data["body"], "https://pdf.com")
+        self.assertEqual(response.data["content_type"], self.pdf.id)
 
-    def test_create_content_invalid_json(self):
+    def test_create_codigo_content(self):
         """
-        Test creando un Content donde body no es JSON válido cuando metadata es 'codigo'.
+        Test to create a new codigo content.
         """
         url = reverse("content_list")
         data = {
             "module": self.module.id,
-            "name": "Invalid JSON Content",
-            "metadata": "codigo",
-            "body": "not a json",  # Esto no es JSON válido
+            "name": "Content codigo",
+            "description": "Content codigo Description",
+            "metadata": {"lenguajes": ["python", "java", "c++"]},
+            "body": "https://pdf.com",
+            "content_type": self.codigo.id,
         }
         response = self.client.post(url, data, format="json")
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("body", response.data)
-        self.assertEqual(response.data["body"][0], "Debe ser un JSON válido.")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["name"], "Content codigo")
+        self.assertEqual(
+            response.data["metadata"]["lenguajes"], ["python", "java", "c++"]
+        )
+        self.assertEqual(response.data["content_type"], self.codigo.id)
 
-    def test_create_content_invalid_url(self):
+    def test_update_partial_content(self):
         """
-        Test creando un Content donde body no es una URL válida cuando metadata es 'pdf'.
+        Test to update partial a Content by UUID.
         """
-        url = reverse("content_list")
+        url = reverse("content_detail", kwargs={"id": self.Content_1.id})
+        data = {"name": "Updated Content 1"}
+        response = self.client.put(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["name"], "Updated Content 1")
+        self.assertEqual(response.data["description"], "Content 1 Description")
+
+    def test_update_all_content(self):
+        """
+        Test to fully update a Content by UUID.
+        """
+        url = reverse("content_detail", kwargs={"id": self.Content_1.id})
         data = {
             "module": self.module.id,
-            "name": "Invalid URL Content",
-            "metadata": "pdf",
-            "body": "not a url",  # Esto no es una URL válida
+            "name": "Updated Content 1",
+            "description": "Updated Description",
+            "metadata": 200,
+            "body": "https://youtube2.com",
+            "content_type": self.video.id,
         }
-        response = self.client.post(url, data, format="json")
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("body", response.data)
-        self.assertEqual(response.data["body"][0], "Debe ser una URL válida.")
+        response = self.client.put(url, data, format="json")  # PUT para actualizar todo
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["name"], "Updated Content 1")
+        self.assertEqual(response.data["description"], "Updated Description")
+        self.assertEqual(response.data["metadata"], 200)
+        self.assertEqual(response.data["body"], "https://youtube2.com")
 
     def test_get_Contents_by_module(self):
         """
@@ -116,25 +152,6 @@ class ContentTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
 
-    def test_create_content(self):
-        """
-        Test to create a new Content.
-        """
-        url = reverse("content_list")
-        data = {
-            "module": self.module.id,
-            "name": "Content 3",
-            "description": "Content 3 Description",
-            "metadata": "video",
-            "body": "https://youtube.com",
-        }
-        response = self.client.post(url, data, format="json")
-        if response.status_code != status.HTTP_201_CREATED:
-            print(response.data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data["name"], "Content 3")
-        self.assertEqual(response.data["module"], self.module.id)
-
     def test_get_Content_by_id(self):
         """
         Test to retrieve a single Content by UUID.
@@ -143,16 +160,6 @@ class ContentTests(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["name"], "Content 1")
-
-    def test_update_Content(self):
-        """
-        Test to update a Content by UUID.
-        """
-        url = reverse("content_detail", kwargs={"id": self.Content_1.id})
-        data = {"name": "Updated Content 1", "description": "Updated Description"}
-        response = self.client.put(url, data, format="json")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["name"], "Updated Content 1")
 
     def test_delete_Content(self):
         """
@@ -173,8 +180,9 @@ class ContentTests(APITestCase):
             "module": str(self.module.id),
             "name": "Content 3",
             "description": "Content 3 Description",
-            "metadata": "pdf",
+            "metadata": 2,
             "body": "https://drive.com",
+            "content_type": self.pdf.id,
         }
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -192,8 +200,9 @@ class ContentTests(APITestCase):
             "module": str(self.module.id),
             "name": "Content 3",
             "description": "Content 3 Description",
-            "metadata": "pdf",
+            "metadata": 3,
             "body": "https://drive.com",
+            "content_type": self.pdf.id,
         }
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
