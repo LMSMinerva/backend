@@ -1,5 +1,7 @@
+import json
 import uuid
 from django.db import models
+from django.core.exceptions import ValidationError
 
 from module.models.module import Module
 
@@ -18,7 +20,16 @@ class Content(models.Model):
         reviews (int): Number of reviews
         rating (float): Average rating
         comments (int): Number of comments
+        metadata (str): Defines the type of body content (ENUM: "codigo", "seleccion", "pdf", "video")
+        body (str/json): Stores either a URL (for "pdf" and "video") or JSON data (for "codigo" and "seleccion")
     """
+
+    METADATA_CHOICES = [
+        ("codigo", "Código"),
+        ("seleccion", "Selección"),
+        ("pdf", "PDF"),
+        ("video", "Video"),
+    ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     module = models.ForeignKey(
@@ -33,12 +44,25 @@ class Content(models.Model):
     reviews = models.PositiveIntegerField(default=0, blank=True)
     comments = models.PositiveIntegerField(default=0, blank=True)
     rating = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True)
+    metadata = models.CharField(max_length=10, choices=METADATA_CHOICES)
+    body = models.TextField(blank=True, null=True)
 
     class Meta:
         ordering = ["order"]
 
     def __str__(self):
         return f"{self.content.name} - {self.name}"
+
+    def clean(self):
+        """Validates that `body` has the correct format based on `metadata`."""
+        if self.metadata in ["codigo", "seleccion"]:
+            try:
+                json.loads(self.body)  # Verifica que sea JSON válido
+            except (TypeError, json.JSONDecodeError):
+                raise ValidationError({"body": "Debe ser un JSON válido."})
+        elif self.metadata in ["pdf", "video"]:
+            if not self.body.startswith(("http://", "https://")):
+                raise ValidationError({"body": "Debe ser una URL válida."})
 
     def save(self, *args, **kwargs):
         """
