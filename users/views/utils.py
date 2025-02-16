@@ -6,7 +6,6 @@ from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
 load_dotenv()
 
 def get_id_token_with_code(code):
@@ -19,7 +18,7 @@ def get_id_token_with_code(code):
     Returns:
         dict: Verified token information or None if verification fails
     """
-    redirect_uri = "postmessage"
+    redirect_uri = "https://minerva-lms.vercel.app/authorize"
     token_endpoint = "https://oauth2.googleapis.com/token"
     
     payload = {
@@ -33,11 +32,40 @@ def get_id_token_with_code(code):
     body = urllib.parse.urlencode(payload)
     headers = {'content-type': 'application/x-www-form-urlencoded'}
 
-    response = requests.post(token_endpoint, data=body, headers=headers)
-    
-    if response.ok:
-        id_token_str = response.json().get('id_token')
-        return id_token.verify_oauth2_token(id_token_str, google_requests.Request(), os.getenv('CLIENT_ID'))
-    else:
-        print(response.json())
+    try:
+        response = requests.post(token_endpoint, data=body, headers=headers)
+        print("Token endpoint response:", response.json())  # Debug log
+
+        if response.ok:
+            id_token_str = response.json().get('id_token')
+            id_info = id_token.verify_oauth2_token(
+                id_token_str, 
+                google_requests.Request(), 
+                os.getenv('CLIENT_ID')
+            )
+            print("Verified token info:", id_info)  # Debug log
+            if not id_info.get('email'):
+                # If email not in token, fetch from userinfo endpoint
+                access_token = response.json().get('access_token')
+                userinfo = requests.get(
+                    'https://www.googleapis.com/oauth2/v3/userinfo',
+                    headers={'Authorization': f'Bearer {access_token}'}
+                ).json()
+                id_info['email'] = userinfo.get('email')
+            
+                return id_info
+            return {
+                'email': id_info.get('email'),
+                'given_name': id_info.get('given_name', ''),
+                'family_name': id_info.get('family_name', ''),
+                'picture': id_info.get('picture', ''),
+                'gender': id_info.get('gender', ''),
+                'birthday': id_info.get('birthdate', None),
+                'sub': id_info.get('sub'),  # Add Google user ID
+                'locale': id_info.get('locale', '')
+            }
+        print("Token endpoint error:", response.json())
+        return None
+    except Exception as e:
+        print(f"Token verification error: {str(e)}")
         return None

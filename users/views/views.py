@@ -8,11 +8,15 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework_simplejwt.views import TokenVerifyView
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
+from rest_framework.exceptions import ValidationError, ParseError
+from ..models.models import UserProfile
+
+import json
 from ..serializers.serializer import UserSerializer
 
 from .utils import get_id_token_with_code
 
-def authenticate_or_create_user(email):
+def authenticate_or_create_user(id_token_data):
     """
     Get existing user or create new one based on email.
     
@@ -22,10 +26,55 @@ def authenticate_or_create_user(email):
     Returns:
         User: Django User instance
     """
+    email = id_token_data['email']
+    google_id = id_token_data['sub']
+
+    if not google_id:
+        raise ValidationError("Missing Google user ID")
+
     try:
         user = User.objects.get(email=email)
+        profile, created = UserProfile.objects.get_or_create(
+            user=user,
+            defaults={
+                'google_id': google_id,
+                'picture': id_token_data.get('picture', ''),
+                'given_name': id_token_data.get('given_name', ''),
+                'family_name': id_token_data.get('family_name', ''),
+                'locale': id_token_data.get('locale', ''),
+                'email': email,
+                'gender': id_token_data.get('gender', ''),
+                'birthday_date': id_token_data.get('birthday', None),
+                'role': 'student'
+            }
+        )
+        if not created:
+            # Update existing profile with latest data
+            profile.picture = id_token_data.get('picture', profile.picture)
+            profile.given_name = id_token_data.get('given_name', profile.given_name)
+            profile.family_name = id_token_data.get('family_name', profile.family_name)
+            profile.locale = id_token_data.get('locale', profile.locale)
+            profile.save()
     except User.DoesNotExist:
-        user = User.objects.create_user(username=email, email=email)
+        user = User.objects.create_user(
+            username=email,
+            email=email,
+            first_name=id_token_data.get('given_name', ''),
+            last_name=id_token_data.get('family_name', '')
+        )
+        UserProfile.objects.create(
+            user=user,
+            google_id=google_id,
+            picture=id_token_data.get('picture', ''),
+            given_name=id_token_data.get('given_name', ''),
+            family_name=id_token_data.get('family_name', ''),
+            locale=id_token_data.get('locale', ''),
+            email=email,
+            gender=id_token_data.get('gender', ''),
+            birthday_date=id_token_data.get('birthday', None),
+            role='student'
+        )
+
     return user
 
 def get_jwt_token(user):
@@ -53,7 +102,7 @@ class LoginWithGoogle(APIView):
             }},
             400: {'type': 'object', 'properties': {'error': {'type': 'string'}}}
         },
-        description='Exchange Google OAuth code for JWT token',
+        description='Exchange Google OAuth code for JWT token and user profile data',
         tags=['authentication']
     )
     def post(self,request):
@@ -66,28 +115,47 @@ class LoginWithGoogle(APIView):
         Returns:
             Response: JWT token and username if successful
         """
-        if "code" not in request.data.keys():
+        try:
+            # Debug incoming request
+            print("Request Content-Type:", request.content_type)
+            print("Request body:", request.body.decode('utf-8'))
+            
+            if "code" not in request.data.keys():
+                return Response(
+                    {"error": "Code is required"}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            code = request.data['code']
+            id_token = get_id_token_with_code(code)
+
+            if not id_token:
+                return Response(
+                    {"error": "Invalid code"}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            user = authenticate_or_create_user(id_token)
+            token = get_jwt_token(user)
+
+            serializer = UserSerializer(user)
+            return Response({'access_token': token, 'user': serializer.data})
+        except json.JSONDecodeError as e:
             return Response(
-                {"error": "Code is required"}, 
+                {"error": f"Invalid JSON format: {str(e)}"}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
-        code = request.data['code']
-        id_token = get_id_token_with_code(code)
-
-        if not id_token:
+        except ValidationError as e:
             return Response(
-                {"error": "Invalid code"}, 
+                {"error": str(e)},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
-        user_email = id_token['email']
-        user = authenticate_or_create_user(user_email)
-        token = get_jwt_token(user)
-
-        serializer = UserSerializer(user)
-        return Response({'access_token': token, 'user': serializer.data})
-    
+        except Exception as e:
+            print(f"Unexpected error: {str(e)}")
+            return Response(
+                {"error": "Authentication failed"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 class LogoutView(GenericAPIView):
     @extend_schema(
         responses={200: {'type': 'object', 'properties': {'message': {'type': 'string'}}}},
