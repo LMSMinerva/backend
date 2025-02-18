@@ -153,7 +153,7 @@ class LoginWithGoogle(APIView):
         except Exception as e:
             print(f"Unexpected error: {str(e)}")
             return Response(
-                {"error": "Authentication failed"},
+                {"error": f"Authentication failed {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 class LogoutView(GenericAPIView):
