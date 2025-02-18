@@ -129,9 +129,9 @@ class LoginWithGoogle(APIView):
             code = request.data['code']
             id_token = get_id_token_with_code(code)
 
-            if not id_token:
+            if id_token == "Token verification error" or id_token =="Token verification error":
                 return Response(
-                    {"error": "Invalid code"}, 
+                    {"error": id_token}, 
                     status=status.HTTP_400_BAD_REQUEST
                 )
             

@@ -65,7 +65,7 @@ def get_id_token_with_code(code):
                 'locale': id_info.get('locale', '')
             }
         print("Token endpoint error:", response.json())
-        return None
+        return "Token endpoint error"
     except Exception as e:
         print(f"Token verification error: {str(e)}")
-        return None
+        return "Token verification error"
