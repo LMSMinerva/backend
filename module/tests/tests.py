@@ -5,9 +5,11 @@ from django.contrib.auth.models import User
 from rest_framework import status
 from content.models.content import Content
 from content.serializers.content import ContentSerializer
+from content_category.models.content_category import ContentCategory
 from course.models import Course
 from module.models import Module
 from django.urls import reverse
+from rest_framework_simplejwt.tokens import RefreshToken
 
 
 class ModuleTests(APITestCase):
@@ -16,12 +18,17 @@ class ModuleTests(APITestCase):
         self.user = User.objects.create_user(
             username="testuser", password="testpassword"
         )
-        credentials = base64.b64encode(b"testuser:testpassword").decode("utf-8")
-        self.client.credentials(HTTP_AUTHORIZATION="Basic " + credentials)
+
+        # Generar token JWT
+        refresh = RefreshToken.for_user(self.user)
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {str(refresh.access_token)}"
+        )
 
         self.course = Course.objects.create(
             name="Test Course", description="Test Course Description"
         )
+        self.content_category = ContentCategory.objects.create(name="video")
         self.module_1 = Module.objects.create(
             course=self.course,
             name="Module 1",
@@ -32,15 +39,18 @@ class ModuleTests(APITestCase):
             name="Module 2",
             description="Module 2 Description",
         )
+
         self.content_1 = Content.objects.create(
             module=self.module_1,
             name="Content 1",
             description="Content 1 Description",
+            content_type=self.content_category,
         )
         self.content_2 = Content.objects.create(
             module=self.module_1,
             name="Content 2",
             description="Content 2 Description",
+            content_type=self.content_category,
         )
 
     def test_get_ordered_contents(self):

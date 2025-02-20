@@ -9,6 +9,7 @@ from content_category.models.content_category import ContentCategory
 from course.models.course import Course
 from module.models import Module
 from django.urls import reverse
+from rest_framework_simplejwt.tokens import RefreshToken
 
 
 class ContentTests(APITestCase):
@@ -17,8 +18,12 @@ class ContentTests(APITestCase):
         self.user = User.objects.create_user(
             username="testuser", password="testpassword"
         )
-        credentials = base64.b64encode(b"testuser:testpassword").decode("utf-8")
-        self.client.credentials(HTTP_AUTHORIZATION="Basic " + credentials)
+
+        # Generar token JWT
+        refresh = RefreshToken.for_user(self.user)
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {str(refresh.access_token)}"
+        )
 
         self.content_category1 = {"name": "codigo"}
         self.codigo = ContentCategory.objects.create(**self.content_category1)
@@ -210,3 +215,80 @@ class ContentTests(APITestCase):
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data["order"], 2)
+
+    def test_module_and_course_counters_on_content_creation(self):
+        """
+        Test to ensure instructional_items and assessment_items are updated
+        in both module and course on content creation.
+        """
+        self.module.refresh_from_db()
+        self.course.refresh_from_db()
+
+        # Verificar contadores iniciales
+        self.assertEqual(self.module.instructional_items, 2)  # Video y PDF
+        self.assertEqual(self.module.assessment_items, 0)
+        self.assertEqual(self.course.assessment_items, 0)
+
+        # Crear contenido tipo "codigo" (assessment)
+        url = reverse("content_list")
+        data = {
+            "module": self.module.id,
+            "name": "Assessment Content",
+            "description": "Assessment Content Description",
+            "metadata": {"lenguajes": ["python"]},
+            "body": "https://drive.com",
+            "content_type": self.codigo.id,
+        }
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Actualizar instancias desde la base de datos
+        self.module.refresh_from_db()
+        self.course.refresh_from_db()
+
+        # Verificar contadores actualizados
+        self.assertEqual(self.module.instructional_items, 2)
+        self.assertEqual(self.module.assessment_items, 1)
+        self.assertEqual(self.course.assessment_items, 1)  # Curso también suma
+
+    def test_module_and_course_counters_on_content_deletion(self):
+        """
+        Test to ensure instructional_items and assessment_items are updated
+        in both module and course on content deletion.
+        """
+        # Crear contenido tipo "codigo" (assessment)
+        codigo_content = Content.objects.create(
+            module=self.module,
+            name="Assessment Content",
+            description="Assessment Content Description",
+            metadata={"lenguajes": ["python"]},
+            body="https://github.com",
+            content_type=self.codigo,
+        )
+
+        self.module.refresh_from_db()
+        self.course.refresh_from_db()
+
+        # Verificar contadores tras creación
+        self.assertEqual(self.module.instructional_items, 2)  # Video y PDF
+        self.assertEqual(self.module.assessment_items, 1)
+        self.assertEqual(self.course.assessment_items, 1)
+
+        # Eliminar contenido tipo "codigo"
+        url = reverse("content_detail", kwargs={"id": codigo_content.id})
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        self.module.refresh_from_db()
+        self.course.refresh_from_db()
+
+        self.assertEqual(self.module.instructional_items, 2)
+        self.assertEqual(self.module.assessment_items, 0)
+        self.assertEqual(self.course.assessment_items, 0)
+
+        url = reverse("content_detail", kwargs={"id": self.Content_1.id})
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        self.module.refresh_from_db()
+        self.assertEqual(self.module.instructional_items, 1)

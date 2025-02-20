@@ -1,6 +1,6 @@
-"""init file for models in module app."""
+"""init file for models in content app."""
 
 from typing import Sequence
-from module.models.module import Module
+from content.models.content import Content
 
-__all__: Sequence[str] = ["Module"]
+__all__: Sequence[str] = ["Content"]

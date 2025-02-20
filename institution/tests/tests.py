@@ -5,6 +5,7 @@ from rest_framework import status
 from django.urls import reverse
 from institution.models import Institution
 from institution.serializers import InstitutionSerializer
+from rest_framework_simplejwt.tokens import RefreshToken
 
 
 class InstitutionTests(APITestCase):
@@ -27,8 +28,13 @@ class InstitutionTests(APITestCase):
         self.user = User.objects.create_user(
             username="testuser", password="testpassword"
         )
-        credentials = base64.b64encode(b"testuser:testpassword").decode("utf-8")
-        self.client.credentials(HTTP_AUTHORIZATION="Basic " + credentials)
+
+        # Generar token JWT
+        refresh = RefreshToken.for_user(self.user)
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {str(refresh.access_token)}"
+        )
+
         self.institution_data = {
             "name": "Test Institution",
             "description": "A sample institution for testing purposes.",

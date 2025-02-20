@@ -5,6 +5,7 @@ from django.urls import reverse
 from course_category.models import CourseCategory
 from course_category.serializers import CourseCategorySerializer
 import base64
+from rest_framework_simplejwt.tokens import RefreshToken
 
 
 class CourseCategoryTests(APITestCase):
@@ -20,8 +21,12 @@ class CourseCategoryTests(APITestCase):
         self.user = User.objects.create_user(
             username="testuser", password="testpassword"
         )
-        credentials = base64.b64encode(b"testuser:testpassword").decode("utf-8")
-        self.client.credentials(HTTP_AUTHORIZATION="Basic " + credentials)
+
+        # Generar token JWT
+        refresh = RefreshToken.for_user(self.user)
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {str(refresh.access_token)}"
+        )
 
         self.course_category_data = {"name": "Test Category"}
         self.course_category = CourseCategory.objects.create(
