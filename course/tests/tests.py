@@ -9,6 +9,7 @@ from course.models import Course
 from course.serializers import CourseSerializer
 from module.models.module import Module
 from module.serializers.module import ModuleSerializer
+from rest_framework_simplejwt.tokens import RefreshToken
 
 
 class CourseTests(APITestCase):
@@ -24,8 +25,12 @@ class CourseTests(APITestCase):
         self.user = User.objects.create_user(
             username="testuser", password="testpassword"
         )
-        credentials = base64.b64encode(b"testuser:testpassword").decode("utf-8")
-        self.client.credentials(HTTP_AUTHORIZATION="Basic " + credentials)
+
+        # Generar token JWT
+        refresh = RefreshToken.for_user(self.user)
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {str(refresh.access_token)}"
+        )
 
         self.category = CourseCategory.objects.create(name="Test Category")
         self.institution = Institution.objects.create(

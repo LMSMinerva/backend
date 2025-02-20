@@ -99,6 +99,33 @@ class Content(models.Model):
                     {"metadata": "Debe ser un número entero positivo de segundos."}
                 )
 
+    def update_module_items(self):
+        """
+        update instructional_items and assessment_items in modulo.
+        """
+        instructional_types = ["pdf", "video"]
+        assessment_types = ["seleccion", "codigo"]
+
+        module = self.module
+        course = module.course
+
+        # Contar instructional y assessment items
+        module.instructional_items = module.contents.filter(
+            content_type__name__in=instructional_types
+        ).count()
+
+        module.assessment_items = module.contents.filter(
+            content_type__name__in=assessment_types
+        ).count()
+
+        module.save(update_fields=["instructional_items", "assessment_items"])
+
+        course.assessment_items = (
+            course.modules.aggregate(total=models.Sum("assessment_items"))["total"] or 0
+        )
+
+        course.save(update_fields=["assessment_items"])
+
     def save(self, *args, **kwargs):
         """
         Auto-assigns an order to the content if it's new,
@@ -110,12 +137,14 @@ class Content(models.Model):
             )["order__max"]
             self.order = (last_order or 0) + 1
         super().save(*args, **kwargs)
+        self.update_module_items()
 
     def delete(self, *args, **kwargs):
         """
         Before deleting, adjust the order of remaining contents.
         """
         super().delete(*args, **kwargs)
+        self.update_module_items()
         module_contents = Content.objects.filter(module=self.module).order_by("order")
         for index, content in enumerate(module_contents):
             content.order = index + 1

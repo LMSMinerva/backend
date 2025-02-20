@@ -5,6 +5,7 @@ from django.urls import reverse
 from content_category.models import ContentCategory
 from content_category.serializers import ContentCategorySerializer
 import base64
+from rest_framework_simplejwt.tokens import RefreshToken
 
 
 class ContentCategoryTests(APITestCase):
@@ -20,8 +21,12 @@ class ContentCategoryTests(APITestCase):
         self.user = User.objects.create_user(
             username="testuser", password="testpassword"
         )
-        credentials = base64.b64encode(b"testuser:testpassword").decode("utf-8")
-        self.client.credentials(HTTP_AUTHORIZATION="Basic " + credentials)
+
+        # Generar token JWT
+        refresh = RefreshToken.for_user(self.user)
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {str(refresh.access_token)}"
+        )
 
         self.content_category_data = {"name": "Test Category"}
         self.content_category = ContentCategory.objects.create(
