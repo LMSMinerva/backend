@@ -9,7 +9,7 @@ class UserProfile(models.Model):
     ]
     
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    google_id = models.CharField(max_length=100, unique=True)
+    google_id = models.CharField(max_length=100, unique=True, blank=True, null=True)  # Make it nullable
     picture = models.URLField(max_length=500, blank=True)
     given_name = models.CharField(max_length=100, blank=True)
     family_name = models.CharField(max_length=100, blank=True)

@@ -5,6 +5,7 @@ import jwt
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
 from dotenv import load_dotenv
+from rest_framework_simplejwt.tokens import AccessToken
 
 load_dotenv()
 
