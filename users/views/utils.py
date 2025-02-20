@@ -8,6 +8,20 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+def get_jwt_token(user):
+    """
+    Generate JWT token for user.
+    
+    Args:
+        user (User): Django User instance
+    
+    Returns:
+        str: JWT access token
+    """
+
+    token = AccessToken.for_user(user)
+    return str(token)
+
 def get_id_token_with_code(code):
     """
     Verify Google authentication code and return user information.

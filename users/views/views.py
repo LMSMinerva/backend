@@ -10,6 +10,7 @@ from rest_framework_simplejwt.views import TokenVerifyView
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
 from rest_framework.exceptions import ValidationError, ParseError
 from ..models.models import UserProfile
+from .utils import get_jwt_token
 
 import json
 from ..serializers.serializer import UserSerializer
@@ -76,20 +77,6 @@ def authenticate_or_create_user(id_token_data):
         )
 
     return user
-
-def get_jwt_token(user):
-    """
-    Generate JWT token for user.
-    
-    Args:
-        user (User): Django User instance
-    
-    Returns:
-        str: JWT access token
-    """
-
-    token = AccessToken.for_user(user)
-    return str(token)
 
 class LoginWithGoogle(APIView):
     """Handle Google OAuth login process."""
