@@ -1,16 +1,18 @@
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework import status, permissions
+from rest_framework import status
 from content.serializers.content import ContentSerializer
 from course.models.course import Course
 from module.models import Module
 from module.serializers import ModuleSerializer
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
-
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 class ModuleListView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     """
     API endpoints for CRUD operations on Module objects.
     """
@@ -54,7 +56,8 @@ class ModuleListView(APIView):
 
 
 class ModuleContentsView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
 
     @extend_schema(
         request=None,
@@ -71,7 +74,8 @@ class ModuleContentsView(APIView):
 
 
 class ModuleDetailView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
 
     @extend_schema(request=None, responses=ModuleSerializer)
     def get(self, request, id):

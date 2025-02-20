@@ -1,14 +1,16 @@
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework import status, permissions
+from rest_framework import status
 from institution.models import Institution
 from institution.serializers import InstitutionSerializer
 from drf_spectacular.utils import extend_schema
-
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 class InstitutionListView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
 
     @extend_schema(request=None, responses=InstitutionSerializer(many=True))
     def get(self, request):
@@ -32,7 +34,8 @@ class InstitutionListView(APIView):
 
 
 class InstitutionDetailView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
 
     @extend_schema(request=None, responses=InstitutionSerializer)
     def get(self, request, id):

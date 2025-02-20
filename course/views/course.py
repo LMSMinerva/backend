@@ -1,16 +1,18 @@
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework import status, permissions
+from rest_framework import status
 from course.models import Course
 from course.serializers import CourseSerializer
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
-
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from module.serializers.module import ModuleSerializer
 
 
 class CourseView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     """
     API endpoints for CRUD operations on Course objects.
     """
@@ -40,7 +42,8 @@ class CourseView(APIView):
 
 
 class CourseModulesView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
 
     @extend_schema(
         request=None,
@@ -57,7 +60,8 @@ class CourseModulesView(APIView):
 
 
 class CourseDetailViewById(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
 
     @extend_schema(request=None, responses=CourseSerializer)
     def get(self, request, id):
@@ -91,7 +95,8 @@ class CourseDetailViewById(APIView):
 
 
 class CourseDetailViewBySlug(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
 
     @extend_schema(request=None, responses=CourseSerializer)
     def get(self, request, alias):

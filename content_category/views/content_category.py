@@ -1,14 +1,17 @@
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework import status, permissions
+from rest_framework import status
 from content_category.models import ContentCategory
 from content_category.serializers import ContentCategorySerializer
 from drf_spectacular.utils import extend_schema
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 
 class ContentCategoryListView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
 
     @extend_schema(request=None, responses=ContentCategorySerializer(many=True))
     def get(self, request):
@@ -34,7 +37,8 @@ class ContentCategoryListView(APIView):
 
 
 class ContentCategoryDetailView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
 
     @extend_schema(request=None, responses=ContentCategorySerializer)
     def get(self, request, id):

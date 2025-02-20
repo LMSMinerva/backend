@@ -1,14 +1,16 @@
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework import status, permissions
+from rest_framework import status
 from content.models.content import Content
 from content.serializers import ContentSerializer
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
-
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 class ContentListView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     """
     API endpoints for CRUD operations on content objects.
     """
@@ -52,7 +54,8 @@ class ContentListView(APIView):
 
 
 class ContentDetailView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
 
     @extend_schema(request=None, responses=ContentSerializer)
     def get(self, request, id):
