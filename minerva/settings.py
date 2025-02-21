@@ -48,6 +48,7 @@ MINERVA_APPS = [
     "content_category",
     "users",
     "content_interaction",
+    "content_comment",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + DEPENDENCIES_APPS + MINERVA_APPS
