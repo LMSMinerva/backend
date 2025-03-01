@@ -1,8 +1,8 @@
 import json
 import uuid
+import random
 from django.db import models
 from django.core.exceptions import ValidationError
-
 from module.models.module import Module
 
 
@@ -12,16 +12,16 @@ class Content(models.Model):
 
     Attributes:
         id (uuid): Unique identifier for the content
-        content (content): Foreign key to the associated content
+        module (Module): Foreign key to the associated module
         content_type (str): Type of content (e.g., video, text, quiz)
         name (str): Name of the content
         description (str): Description of the content
-        order (int): Order of the content within the content
+        order (int): Order of the content within the module
         reviews (int): Number of reviews
         rating (float): Average rating
         comments (int): Number of comments
-        metadata (str): Stores specific metadata depending on the content type
-        body (str/json): Stores either a URL (for "pdf" and "video" and "codigo") or JSON data ("seleccion")
+        metadata (json): Stores specific metadata depending on the content type
+        body (json): Stores structured content (e.g., URLs for media or JSON for "selección")
     """
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -38,92 +38,76 @@ class Content(models.Model):
     comments = models.PositiveIntegerField(default=0, blank=True)
     rating = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True)
     metadata = models.JSONField(blank=True, null=True)
-    body = models.TextField(blank=True, null=True)
+    body = models.JSONField(blank=True, null=True)
 
     class Meta:
         ordering = ["order"]
 
     def __str__(self):
-        return f"{self.content.name} - {self.name}"
+        return f"{self.module.name} - {self.name}"
 
     def clean(self):
         """Validates that `body` and `metadata` have the correct format based on `content_type`."""
-
         if self.content_type.name in ["codigo", "pdf", "video"]:
-            # body debe ser una URL válida
             if not isinstance(self.body, str) or not self.body.startswith(
                 ("http://", "https://")
             ):
                 raise ValidationError({"body": "Debe ser una URL válida."})
 
-        if self.content_type.name == "codigo":
-            if not isinstance(self.metadata, dict) or "lenguajes" not in self.metadata:
-                raise ValidationError(
-                    {"metadata": "Debe contener la clave 'lenguajes'."}
-                )
+            if self.content_type.name in ["pdf", "video"]:
+                if not isinstance(self.metadata, (int, float)):
+                    raise ValidationError({"metadata": "Debe ser un número."})
 
-            if not isinstance(self.metadata["lenguajes"], list) or not all(
-                isinstance(lang, str) for lang in self.metadata["lenguajes"]
-            ):
-                raise ValidationError(
-                    {"metadata": "'lenguajes' debe ser una lista de strings."}
-                )
-
-        elif self.content_type.name == "seleccion":
-            # metadata debe ser un número de preguntas
-            if not isinstance(self.metadata, int) or self.metadata <= 0:
-                raise ValidationError(
-                    {"metadata": "Debe ser un número entero positivo de preguntas."}
-                )
-
-        elif self.content_type.name == "pdf":
-            # metadata debe ser el número de páginas
-            if isinstance(self.metadata, str):
-                try:
-                    self.metadata = int(self.metadata)
-                except ValueError:
+            if self.content_type.name == "codigo":
+                if (
+                    not isinstance(self.metadata, dict)
+                    or "lenguajes" not in self.metadata
+                ):
                     raise ValidationError(
-                        {"metadata": "Debe ser un número entero positivo de páginas."}
+                        {"metadata": "Debe contener la clave 'lenguajes'."}
+                    )
+                if not isinstance(self.metadata["lenguajes"], list) or not all(
+                    isinstance(lang, str) for lang in self.metadata["lenguajes"]
+                ):
+                    raise ValidationError(
+                        {"metadata": "'lenguajes' debe ser una lista de strings."}
                     )
 
-            # Verifica que sea un número entero positivo
-            if not isinstance(self.metadata, int) or self.metadata <= 0:
+        elif self.content_type.name == "seleccion":
+            # Validar que `body` sea un JSON con las claves esperadas
+            required_keys = {"variables", "enunciado", "respuestas"}
+            if not isinstance(self.body, dict) or not required_keys.issubset(
+                self.body.keys()
+            ):
                 raise ValidationError(
-                    {"metadata": "Debe ser un número entero positivo de páginas."}
+                    {
+                        "body": "Debe contener las claves 'variables', 'enunciado' y 'respuestas'."
+                    }
                 )
 
-        elif self.content_type.name == "video":
-            # metadata debe ser la duración del video en segundos
-            if not isinstance(self.metadata, int) or self.metadata <= 0:
-                raise ValidationError(
-                    {"metadata": "Debe ser un número entero positivo de segundos."}
-                )
+            # Validar que `metadata` sea un número
+            if not isinstance(self.metadata, (int, float)):
+                raise ValidationError({"metadata": "Debe ser un número."})
 
     def update_module_items(self):
-        """
-        update instructional_items and assessment_items in modulo.
-        """
+        """Update instructional_items and assessment_items in module."""
         instructional_types = ["pdf", "video"]
         assessment_types = ["seleccion", "codigo"]
 
         module = self.module
         course = module.course
 
-        # Contar instructional y assessment items
         module.instructional_items = module.contents.filter(
             content_type__name__in=instructional_types
         ).count()
-
         module.assessment_items = module.contents.filter(
             content_type__name__in=assessment_types
         ).count()
 
         module.save(update_fields=["instructional_items", "assessment_items"])
-
         course.assessment_items = (
             course.modules.aggregate(total=models.Sum("assessment_items"))["total"] or 0
         )
-
         course.save(update_fields=["assessment_items"])
 
     def save(self, *args, **kwargs):

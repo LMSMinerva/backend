@@ -1,4 +1,3 @@
-import base64
 import json
 from rest_framework.test import APITestCase
 from rest_framework.test import APIClient
@@ -16,7 +15,7 @@ class ContentTests(APITestCase):
     def setUp(self):
         self.client = APIClient()
         self.user = User.objects.create_user(
-            username="testuser", password="testpassword"
+            username="testuser1", password="testpassword1"
         )
 
         # Generar token JWT
@@ -31,6 +30,8 @@ class ContentTests(APITestCase):
         self.pdf = ContentCategory.objects.create(**self.content_category2)
         self.content_category3 = {"name": "video"}
         self.video = ContentCategory.objects.create(**self.content_category3)
+        self.content_category4 = {"name": "seleccion"}
+        self.seleccion = ContentCategory.objects.create(**self.content_category4)
 
         self.course = Course.objects.create(
             name="Test Course",
@@ -57,6 +58,171 @@ class ContentTests(APITestCase):
             body="https://drive.com",
             content_type=self.pdf,
         )
+        self.content_data = {
+            "module": self.module.id,
+            "name": "Content Selección",
+            "description": "Pregunta de selección sobre manzanas",
+            "metadata": 2,
+            "body": {
+                "variables": "a = 123\n b = round(randint(123))",
+                "enunciado": "**Cuanto** es {a} manzanas + {b} manzanas...?",
+                "respuestas": [
+                    ["1", "Tienen {a + b} manzanas en total", True],
+                    ["2", "Tienen {2 * (a + b)} manzanas en total", False],
+                    ["3", "Tienen {a - b} manzanas en total", False],
+                    ["4", "Tienen {3 * a + b} peras en total", False],
+                ],
+            },
+            "content_type": self.seleccion,
+        }
+
+        self.content = Content.objects.create(
+            module=self.module,
+            name=self.content_data["name"],
+            description=self.content_data["description"],
+            metadata=self.content_data["metadata"],
+            body=json.dumps(self.content_data["body"]),
+            content_type=self.seleccion,
+        )
+
+    def test_get_content(self):
+        """
+        Prueba que el endpoint de obtener contenido devuelve la estructura correcta.
+        """
+        response = self.client.get(
+            reverse("content_detail", kwargs={"id": self.content.id})
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+
+        # Convertimos el campo 'body' de string JSON a diccionario
+        body = (
+            json.loads(data["body"]) if isinstance(data["body"], str) else data["body"]
+        )
+
+        # Verificamos que la estructura sea correcta
+        self.assertIn("enunciado", body)
+        self.assertIn("respuestas", body)
+        self.assertIsInstance(body["respuestas"], list)
+
+    def test_partial_update_content_seleccion(self):
+        """
+        Prueba que se pueda actualizar parcialmente el contenido.
+        """
+        update_data = {
+            "body": {
+                "variables": "a = 200\n b = round(randint(5))",
+                "enunciado": "**Cuanto** es {a} manzanas - {b} manzanas...?",
+                "respuestas": [
+                    ["Tienen {a + b} manzanas en total", True],
+                    ["Tienen {2 * (a + b)} manzanas en total", False],
+                    ["Tienen {a - b} manzanas en total", False],
+                    ["Tienen {3 * a + b} peras en total", False],
+                ],
+            }
+        }
+        response = self.client.put(
+            reverse("content_detail", kwargs={"id": self.content.id}),
+            data=update_data,
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+        body = (
+            json.loads(response.json()["body"])
+            if isinstance(response.json()["body"], str)
+            else response.json()["body"]
+        )
+        self.assertEqual(
+            body["enunciado"], "**Cuanto** es {a} manzanas - {b} manzanas...?"
+        )
+        self.assertEqual(body["variables"], "a = 200\n b = round(randint(5))")
+
+    def test_full_update_content(self):
+        """
+        Prueba que se pueda actualizar completamente el contenido.
+        """
+        update_data = {
+            "module": self.module.id,
+            "name": "Content Selección",
+            "description": "Pregunta de x y",
+            "metadata": 2,
+            "body": {
+                "variables": "x = 50\ny = 100",
+                "enunciado": "Cuanto es {x} + {y}... ?",
+                "respuestas": [
+                    ["1", "Tienen {x + y} en total", True],
+                    ["2", "Tienen {x - y} en total", False],
+                ],
+            },
+            "content_type": self.seleccion.id,
+        }
+        response = self.client.put(
+            reverse("content_detail", kwargs={"id": self.content.id}),
+            data=update_data,
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+        body = (
+            json.loads(response.json()["body"])
+            if isinstance(response.json()["body"], str)
+            else response.json()["body"]
+        )
+        self.assertEqual(body["enunciado"], "Cuanto es {x} + {y}... ?")
+        self.assertEqual(body["variables"], "x = 50\ny = 100")
+        self.assertEqual(response.data["name"], "Content Selección")
+
+    def test_delete_content(self):
+        """
+        Prueba que se pueda eliminar un contenido.
+        """
+        response = self.client.delete(
+            reverse("content_detail", kwargs={"id": self.content.id})
+        )
+        self.assertEqual(response.status_code, 204)
+        response = self.client.get(
+            reverse("content_detail", kwargs={"id": self.content.id})
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_validate_answer(self):
+        """
+        Prueba el endpoint que valida si una respuesta es correcta o incorrecta.
+        """
+        validation_data = {"selected": ["1"]}  # ID de la respuesta correcta
+        response = self.client.post(
+            reverse("content_result", kwargs={"id": self.content.id}),
+            data=validation_data,
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["results"], {"1": True})
+
+    def test_create_seleccion_content(self):
+        """
+        Test to create a new seleccion content.
+        """
+        url = reverse("content_list")
+        data = {
+            "module": self.module.id,
+            "name": "Content Selección",
+            "description": "Pregunta de selección sobre manzanas",
+            "metadata": 1,
+            "body": {
+                "variables": "a = 123\nb = round(random.randint(1, 123))",
+                "enunciado": "**Cuanto** es {a} manzanas + {b} manzanas...?",
+                "respuestas": [
+                    [1, "Tienen {a + b} manzanas en total", True],
+                    [2, "Tienen {2 * (a + b)} manzanas en total", False],
+                    [3, "Tienen {a - b} manzanas en total", False],
+                    [4, "Tienen {3 * a + b} peras en total", False],
+                ],
+            },
+            "content_type": self.seleccion.id,
+        }
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["name"], "Content Selección")
+        self.assertEqual(response.data["content_type"], self.seleccion.id)
 
     def test_create_video_content(self):
         """
@@ -158,7 +324,7 @@ class ContentTests(APITestCase):
         url = reverse("content_list") + f"?module_id={self.module.id}"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 2)
+        self.assertEqual(len(response.data), 3)
 
     def test_get_Content_by_id(self):
         """
@@ -194,7 +360,7 @@ class ContentTests(APITestCase):
         }
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data["order"], 3)
+        self.assertEqual(response.data["order"], 4)
 
     def test_order_field_on_delete(self):
         """
@@ -214,7 +380,7 @@ class ContentTests(APITestCase):
         }
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data["order"], 2)
+        self.assertEqual(response.data["order"], 3)
 
     def test_module_and_course_counters_on_content_creation(self):
         """
@@ -226,8 +392,8 @@ class ContentTests(APITestCase):
 
         # Verificar contadores iniciales
         self.assertEqual(self.module.instructional_items, 2)  # Video y PDF
-        self.assertEqual(self.module.assessment_items, 0)
-        self.assertEqual(self.course.assessment_items, 0)
+        self.assertEqual(self.module.assessment_items, 1)
+        self.assertEqual(self.course.assessment_items, 1)
 
         # Crear contenido tipo "codigo" (assessment)
         url = reverse("content_list")
@@ -248,8 +414,8 @@ class ContentTests(APITestCase):
 
         # Verificar contadores actualizados
         self.assertEqual(self.module.instructional_items, 2)
-        self.assertEqual(self.module.assessment_items, 1)
-        self.assertEqual(self.course.assessment_items, 1)  # Curso también suma
+        self.assertEqual(self.module.assessment_items, 2)
+        self.assertEqual(self.course.assessment_items, 2)  # Curso también suma
 
     def test_module_and_course_counters_on_content_deletion(self):
         """
@@ -271,8 +437,8 @@ class ContentTests(APITestCase):
 
         # Verificar contadores tras creación
         self.assertEqual(self.module.instructional_items, 2)  # Video y PDF
-        self.assertEqual(self.module.assessment_items, 1)
-        self.assertEqual(self.course.assessment_items, 1)
+        self.assertEqual(self.module.assessment_items, 2)
+        self.assertEqual(self.course.assessment_items, 2)
 
         # Eliminar contenido tipo "codigo"
         url = reverse("content_detail", kwargs={"id": codigo_content.id})
@@ -283,8 +449,8 @@ class ContentTests(APITestCase):
         self.course.refresh_from_db()
 
         self.assertEqual(self.module.instructional_items, 2)
-        self.assertEqual(self.module.assessment_items, 0)
-        self.assertEqual(self.course.assessment_items, 0)
+        self.assertEqual(self.module.assessment_items, 1)
+        self.assertEqual(self.course.assessment_items, 1)
 
         url = reverse("content_detail", kwargs={"id": self.Content_1.id})
         response = self.client.delete(url)
