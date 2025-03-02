@@ -9,6 +9,7 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 import random
+from .utils import process_visualization
 
 
 class ContentListView(APIView):
@@ -131,3 +132,31 @@ class ValidateAnswerView(APIView):
         # Devolver lista con el estado de cada respuesta
         result = {"results": {rid: rid in correct_ids for rid in selected_ids}}
         return Response(result)
+    
+class VisualizeQuestionView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, id):
+        """
+        Visualize a question with content_type 'seleccion'.
+        Returns processed body content for rendering.
+        """
+        # Get the content object
+        content = get_object_or_404(Content, id=id)
+        
+        # Check if content type is 'seleccion'
+        if content.content_type.name != "seleccion":
+            return Response(
+                {"error": "Only content with type 'seleccion' can be visualized"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        # Extract body content
+        body = content.body if isinstance(content.body, dict) else json.loads(content.body)
+        
+        # Process the body with the visualization utility
+        processed_body = process_visualization(body)
+        
+        # Return the processed body
+        return Response(processed_body)

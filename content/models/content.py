@@ -85,7 +85,7 @@ class Content(models.Model):
                     }
                 )
 
-            # Validar que `metadata` sea un número
+            # Validate `metadata` is a number
             if not isinstance(self.metadata, (int, float)):
                 raise ValidationError({"metadata": "Debe ser un número."})
 

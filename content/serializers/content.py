@@ -7,7 +7,7 @@ from rest_framework import serializers
 from content.models.content import Content
 from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError
-
+from .utils import validate_seleccion_body
 
 class ContentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -43,110 +43,22 @@ class ContentSerializer(serializers.ModelSerializer):
 
         # Validar `seleccion`
         if content_type and content_type.name == "seleccion":
-            required_keys = {"variables", "enunciado", "respuestas"}
-            if not isinstance(body, dict) or not required_keys.issubset(body.keys()):
-                raise serializers.ValidationError(
-                    {
-                        "body": "Debe contener las claves 'variables', 'enunciado' y 'respuestas'."
-                    }
-                )
+            # Usar la función de validación específica para seleccion
+            is_valid, error_message = validate_seleccion_body(body)
+            if not is_valid:
+                raise serializers.ValidationError({"body": error_message})
 
-            # Ejecutar y validar variables
-            variables_code = body["variables"]
-            context = {"random": random}
-            try:
-                exec(variables_code, {}, context)
-            except Exception as e:
-                raise serializers.ValidationError(
-                    {"body": f"Error ejecutando las variables: {e}"}
-                )
-
-            # Extraer variables usadas en enunciado y respuestas
-
-            def encontrar_variables(texto):
-                """Encuentra todas las variables en un string con formato {variable}."""
-                if not isinstance(
-                    texto, str
-                ):  # Si no es un string, retornamos un conjunto vacío
-                    return set()
-                return set(re.findall(r"\{(\w+)\}", texto))
-
-            variables_usadas = set()
-            variables_usadas.update(encontrar_variables(body["enunciado"]))
-            for resp in body["respuestas"]:
-                variables_usadas.update(encontrar_variables(resp[1]))
-
-            if not variables_usadas.issubset(context.keys()):
-                raise serializers.ValidationError(
-                    {
-                        "body": f"Hay variables en el enunciado o respuestas que no están definidas en 'variables'. Variables usadas: {variables_usadas}. Variables definidas: {set(context.keys())}"
-                    }
-                )
-
-            # Validar respuestas como lista de tuplas (UUID, str, bool)
-            if not isinstance(body["respuestas"], list):
-                raise serializers.ValidationError(
-                    {"body": "'respuestas' debe ser una lista."}
-                )
-
-            # Validar respuestas
+        # Asegurar que las respuestas tengan IDs únicos y valores correctos de boolean
             new_respuestas = []
             for resp in body["respuestas"]:
-                if not isinstance(resp, list) or len(resp) not in [2, 3]:
-                    raise serializers.ValidationError(
-                        {
-                            "body": "Cada respuesta debe ser una lista de 2 o 3 elementos."
-                        }
-                    )
                 if len(resp) == 2:
+                    # Agregar ID si no existe
                     resp_id = str(uuid.uuid4())
                     new_respuestas.append([resp_id, resp[0], resp[1]])
                 else:
-                    new_respuestas.append([resp[0], resp[1], resp[2]])
+                    # Asegurar que el tercer elemento sea boolean
+                    new_respuestas.append([resp[0], resp[1], bool(resp[2])])
 
             body["respuestas"] = new_respuestas
-
+            
         return data
-
-
-def to_representation(self, instance):
-    data = super().to_representation(instance)
-    body = data.get("body", "{}")  # Asegura que sea un string JSON
-
-    # Convertir body a diccionario si es un string
-    if isinstance(body, str):
-        try:
-            body = json.loads(body)  # Convertir JSON string a diccionario
-        except json.JSONDecodeError:
-            raise serializers.ValidationError({"body": "Formato JSON inválido"})
-
-    # Ejecutar código de variables
-    variables_code = body.get("variables", "")
-    context = {"random": random}
-
-    try:
-        exec(variables_code, {}, context)
-    except Exception as e:
-        raise serializers.ValidationError(
-            {"body": f"Error ejecutando las variables: {e}"}
-        )
-
-    # Función para evaluar expresiones dentro de {}
-    def evaluar_expresion(match):
-        expr = match.group(1)
-        try:
-            return str(eval(expr, {}, context))  # Evaluar usando el contexto
-        except Exception:
-            return match.group(0)  # Dejar la expresión como está si falla
-
-    # Aplicar evaluación en enunciado y respuestas
-    pattern = re.compile(r"\{(.*?)\}")  # Captura contenido dentro de {}
-
-    body["enunciado"] = pattern.sub(evaluar_expresion, body["enunciado"])
-    body["respuestas"] = [
-        [resp[0], pattern.sub(evaluar_expresion, resp[1]), resp[2]]
-        for resp in body["respuestas"]
-    ]
-
-    data["body"] = body
-    return data
